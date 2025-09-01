@@ -64,6 +64,39 @@ out = pl.DataFrame(data)
 print(out)
 out.write_csv("output.csv")
 
+import numpy as np
+from scipy.optimize import minimize
+
+# Assume your data: replace with your actual 20x20 cov matrix and 20x1 mean vector
+Sigma = np.array([
+
+])  # Your 20x20 covariance matrix
+r = np.array([...])      # Your 20x1 sample means vector
+
+def utility(x, r, Sigma, tol):
+    if tol == 0:  # Min variance: minimize x^T Sigma x / 2 (ignore returns)
+        return 0.5 * x.T @ Sigma @ x
+    else:
+        risk_aversion = 0.5 * (1 / tol)
+        return - (x.T @ r - risk_aversion * x.T @ Sigma @ x)  # Minimize -U to maximize U
+
+# Constraints
+constraints = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}]  # Sum x = 1
+bounds = [(0.025, None)] * 20  # x_i >= 0.025, no upper bound
+
+# For each Tol
+for tol in [0, 1, 2]:
+    if tol == 0:
+        # Min variance: minimize quadratic variance
+        res = minimize(lambda x: utility(x, r, Sigma, tol=0), x0=np.ones(20)/20,
+                       method='trust-constr', bounds=bounds, constraints=constraints)
+    else:
+        res = minimize(lambda x: utility(x, r, Sigma, tol), x0=np.ones(20)/20,
+                       method='SLSQP', bounds=bounds, constraints=constraints)
+    print(f"Tol={tol}: Optimal x = {res.x}, Utility = {-res.fun if tol > 0 else -res.fun}")
+
+# Verify: Compare res.x to your Solver x; if close (e.g., within 1E-4), confirmed.
+
 
 
 
